@@ -34,11 +34,13 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
 
     private func fetchProducts() {
         print("🔍 Buscando produtos IAP:", productIdentifiers)
+        print("⏰ Aguarde... Pode demorar até 30 segundos se produtos foram recém configurados")
         let request = SKProductsRequest(productIdentifiers: productIdentifiers)
         request.delegate = self
         print("🌐 StoreKit request criado, iniciando...")
         request.start()
         print("🚀 StoreKit request.start() chamado!")
+        print("📋 IMPORTANTE: Produtos precisam estar 'Ready to Submit' no App Store Connect")
     }
 
     func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
@@ -64,6 +66,8 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
     func request(_ request: SKRequest, didFailWithError error: Error) {
         print("❌ ERRO StoreKit:", error.localizedDescription)
         print("❌ Erro detalhado:", error)
+        print("💡 DICA: Se erro persistir, verifique se produtos têm screenshot no App Store Connect")
+        print("💡 E aguarde 2-6h após adicionar metadados completos")
     }
 
     // MARK: - Public
