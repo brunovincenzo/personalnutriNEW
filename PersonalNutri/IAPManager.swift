@@ -34,22 +34,34 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
         print("🔍 Buscando produtos IAP:", productIdentifiers)
         let request = SKProductsRequest(productIdentifiers: productIdentifiers)
         request.delegate = self
+        print("🌐 StoreKit request criado, iniciando...")
         request.start()
+        print("🚀 StoreKit request.start() chamado!")
     }
 
     func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
+        print("🎉 RESPOSTA STOREKIT RECEBIDA!")
         print("🛍️ StoreKit Response - Produtos disponíveis:", response.products.count)
         print("🚫 Produtos inválidos:", response.invalidProductIdentifiers)
+        
+        if response.invalidProductIdentifiers.count > 0 {
+            print("⚠️ IDs inválidos detectados:", response.invalidProductIdentifiers)
+        }
         
         for product in response.products {
             products[product.productIdentifier] = product
             print("✅ Produto carregado: \(product.productIdentifier) - \(product.localizedTitle)")
         }
         print("📦 Total produtos IAP carregados:", products.keys)
+        
+        if products.isEmpty {
+            print("🚨 NENHUM PRODUTO FOI CARREGADO! Verifique StoreKit Configuration")
+        }
     }
 
     func request(_ request: SKRequest, didFailWithError error: Error) {
-        print("Erro ao carregar produtos IAP:", error.localizedDescription)
+        print("❌ ERRO StoreKit:", error.localizedDescription)
+        print("❌ Erro detalhado:", error)
     }
 
     // MARK: - Public
