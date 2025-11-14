@@ -32,11 +32,11 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(webView)
 
-        // Carregar o site principal (com login)
-        if let url = URL(string: "https://t800robodetreinos.com.br") {
+        // Carregar a página de assinatura
+        if let url = URL(string: "https://t800robodetreinos.com.br/in-app.php") {
             let request = URLRequest(url: url)
             webView.load(request)
-            print("🔵 Carregando site principal")
+            print("🔵 Carregando página de assinatura: in-app.php")
         }
     }
 
