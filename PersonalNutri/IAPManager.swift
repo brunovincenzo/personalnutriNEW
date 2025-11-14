@@ -30,16 +30,21 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
     }
 
     private func fetchProducts() {
+        print("🔍 Buscando produtos IAP:", productIdentifiers)
         let request = SKProductsRequest(productIdentifiers: productIdentifiers)
         request.delegate = self
         request.start()
     }
 
     func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
+        print("🛍️ StoreKit Response - Produtos disponíveis:", response.products.count)
+        print("🚫 Produtos inválidos:", response.invalidProductIdentifiers)
+        
         for product in response.products {
             products[product.productIdentifier] = product
+            print("✅ Produto carregado: \(product.productIdentifier) - \(product.localizedTitle)")
         }
-        print("Produtos IAP carregados:", products.keys)
+        print("📦 Total produtos IAP carregados:", products.keys)
     }
 
     func request(_ request: SKRequest, didFailWithError error: Error) {
