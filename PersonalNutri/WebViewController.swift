@@ -37,6 +37,14 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         print("✅ Página carregada com sucesso")
         
+        // Limpar cache e cookies
+        let dataStore = WKWebsiteDataStore.default()
+        dataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
+            dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records, completionHandler: {
+                print("🗑️ Cache limpo")
+            })
+        }
+        
         // Testar se o handler está acessível
         let testJS = """
         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iap) {
@@ -51,6 +59,31 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
         webView.evaluateJavaScript(testJS) { result, error in
             if let result = result as? Bool {
                 print(result ? "✅ JS confirma: bridge disponível" : "❌ JS confirma: bridge NÃO disponível")
+            }
+        }
+        
+        // Verificar se o debug console existe na página
+        let checkDebugConsole = """
+        if (document.getElementById('debug-console')) {
+            'DEBUG CONSOLE ENCONTRADO';
+        } else {
+            'DEBUG CONSOLE NÃO ENCONTRADO';
+        }
+        """
+        
+        webView.evaluateJavaScript(checkDebugConsole) { result, error in
+            if let msg = result as? String {
+                print("📄 Verificação: \(msg)")
+            }
+        }
+        
+        // Forçar reload da página se debug console não existir
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            webView.evaluateJavaScript("document.getElementById('debug-console') ? 'OK' : 'RELOAD'") { result, error in
+                if let msg = result as? String, msg == "RELOAD" {
+                    print("⚠️ Página antiga detectada - forçando reload...")
+                    webView.reloadFromOrigin()
+                }
             }
         }
     }
