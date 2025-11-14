@@ -34,13 +34,15 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
 
     private func fetchProducts() {
         print("🔍 Buscando produtos IAP:", productIdentifiers)
-        print("⏰ Aguarde... Pode demorar até 30 segundos se produtos foram recém configurados")
+        print("🎧 SANDBOX: iPhone vai buscar produtos nos servidores da Apple")
+        print("📱 Bundle ID:", Bundle.main.bundleIdentifier ?? "ERRO")
+        
         let request = SKProductsRequest(productIdentifiers: productIdentifiers)
         request.delegate = self
         print("🌐 StoreKit request criado, iniciando...")
         request.start()
         print("🚀 StoreKit request.start() chamado!")
-        print("📋 IMPORTANTE: Produtos precisam estar 'Ready to Submit' no App Store Connect")
+        print("📋 Se não responder: Bundle ID deve ser EXATO no App Store Connect")
     }
 
     func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
@@ -66,8 +68,10 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
     func request(_ request: SKRequest, didFailWithError error: Error) {
         print("❌ ERRO StoreKit:", error.localizedDescription)
         print("❌ Erro detalhado:", error)
-        print("💡 DICA: Se erro persistir, verifique se produtos têm screenshot no App Store Connect")
-        print("💡 E aguarde 2-6h após adicionar metadados completos")
+        print("📱 Bundle atual:", Bundle.main.bundleIdentifier ?? "ERRO")
+        print("💡 SANDBOX: Bundle ID deve ser EXATO no App Store Connect")
+        print("💡 Produtos devem estar 'Ready to Submit' com screenshot")
+        print("💡 Aguarde até 6h após configurar no App Store Connect")
     }
 
     // MARK: - Public
@@ -79,9 +83,19 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
         }
 
         guard let product = products[productId] else {
-            completion(IAPResult(status: "error", productId: productId, transactionId: nil, message: "Produto não encontrado"))
+            print("❌ SANDBOX: Produto \(productId) não encontrado!")
+            print("📦 Produtos disponíveis:", products.keys)
+            print("🔍 Bundle ID atual:", Bundle.main.bundleIdentifier ?? "ERRO")
+            print("💡 CRUCIAL: Bundle ID deve ser EXATO no App Store Connect")
+            print("💡 Produtos devem ter status 'Ready to Submit'")
+            completion(IAPResult(status: "error", productId: productId, transactionId: nil, message: "Produto não encontrado - Verifique Bundle ID no App Store Connect"))
             return
         }
+        
+        executePurchase(product: product, appAccountToken: appAccountToken, completion: completion)
+    }
+    
+    private func executePurchase(product: SKProduct, appAccountToken: String?, completion: @escaping (IAPResult) -> Void) {
 
         onPurchaseCompletion = completion
 
