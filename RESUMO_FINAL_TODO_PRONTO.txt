@@ -1,0 +1,222 @@
+═══════════════════════════════════════════════════════════════════════════════
+ RESUMO FINAL - TUDO PRONTO PARA COPIAR E COLAR
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 O QUE FOI FEITO AUTOMATICAMENTE:
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ ARQUIVOS SWIFT ATUALIZADOS (já no repositório):
+   1. IAPManager.swift
+      - Método purchase() agora aceita appAccountToken
+      - Define applicationUsername no SKPayment para validação server-side
+
+   2. WebViewController.swift
+      - Injeta USER_EMAIL e APP_UUID via WKUserScript
+      - Define handler padrão window.iapResult() para receber respostas
+      - Carrega página remota como prioridade (produção-like)
+      - Fallback para assinatura.html local se remoto falhar
+      - Passa appAccountToken ao IAPManager
+
+   3. PersonalNutriApp.swift
+      - IAPManager.shared.start() chamado na inicialização
+
+✅ ARQUIVOS DE RECURSOS (já no repositório):
+   1. PersonalNutri/PersonalNutri/Resources/assinatura.html
+      - Página de teste local completa com todos os botões
+      - Funciona sem internet para testes
+
+   2. PersonalNutri/PersonalNutri/PersonalNutri.storekit
+      - Configuração StoreKit com 3 produtos prontos:
+        • com.t800solucoes.personalnutri.mensal.1
+        • com.t800solucoes.personalnutri.semestral.1
+        • com.t800solucoes.personalnutri.anual.1
+
+
+🔧 O QUE VOCÊ PRECISA FAZER NO XCODE (6 PASSOS SIMPLES):
+═══════════════════════════════════════════════════════════════════════════════
+
+PASSO 1: Abrir o projeto
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Terminal (copie e cole):
+  open PersonalNutri/PersonalNutri.xcodeproj
+
+Resultado esperado: Xcode abre com o projeto.
+
+
+PASSO 2: Adicionar arquivo PersonalNutri.storekit ao target
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+No Xcode:
+  a) File > Add Files to "PersonalNutri"...
+  b) Navegue até: PersonalNutri/PersonalNutri/PersonalNutri.storekit
+  c) Marque "Copy items if needed"
+  d) Em "Add to targets", marque "PersonalNutri"
+  e) Clique "Add"
+
+Resultado esperado: Arquivo aparece na coluna esquerda do Xcode.
+
+
+PASSO 3: Verificar Target Membership de todos os arquivos principais
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+No Xcode, na coluna esquerda, clique em cada arquivo (um por um):
+  • IAPManager.swift
+  • WebViewController.swift
+  • PersonalNutriApp.swift
+  • assinatura.html
+  • PersonalNutri.storekit
+
+Para cada arquivo:
+  a) Selecione o arquivo
+  b) Na aba direita (File Inspector), procure "Target Membership"
+  c) Confirme que "PersonalNutri" está MARCADO (checkbox ✓)
+  d) Se não estiver, clique para marcar
+
+Resultado esperado: Todos os arquivos têm "PersonalNutri" marcado.
+
+
+PASSO 4: Habilitar In-App Purchase Capability
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+No Xcode:
+  a) Clique no projeto "PersonalNutri" (raiz, coluna esquerda)
+  b) Selecione o target "PersonalNutri"
+  c) Clique na aba "Signing & Capabilities"
+  d) Clique no botão "+ Capability" (topo esquerdo)
+  e) Na caixa de busca, procure "In-App Purchase"
+  f) Clique duas vezes em "In-App Purchase"
+
+Resultado esperado: Você vê "In-App Purchase" listado em Capabilities.
+
+
+PASSO 5: Configurar StoreKit Configuration
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+No Xcode:
+  a) Product > Scheme > Edit Scheme...
+  b) Selecione "Run" (lado esquerdo)
+  c) Clique na aba "Options"
+  d) Em "StoreKit Configuration", selecione "PersonalNutri.storekit"
+  e) Clique "Close"
+
+Resultado esperado: Scheme agora usa PersonalNutri.storekit para simular compras.
+
+
+PASSO 6: Conectar iPhone e rodar
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+No Mac:
+  a) Conecte seu iPhone via USB ao Mac
+  b) Clique em "Trust" no iPhone para confiar no Mac
+  c) Ao Xcode, topo central, selecione seu iPhone (não Simulator)
+  d) Clique no botão Play (▶) para buildar e rodar
+
+Resultado esperado: 
+  - Console Xcode mostra "Build Succeeded"
+  - App abre no iPhone mostrando a página de assinatura
+
+
+🧪 TESTAR A PONTE IAP NO IPHONE:
+═══════════════════════════════════════════════════════════════════════════════
+
+Na app no seu iPhone:
+
+1. TESTE DA BRIDGE:
+   Clique em "TESTE IAP BRIDGE"
+   → Você deve ver um alerta ou mensagem de status
+   → No console do Xcode, procure por "🐞 DEBUG - ponte JS → iOS funcionando!"
+
+2. COMPRAR MENSAL:
+   Clique em "Mensal"
+   → StoreKit simulará uma tela de confirmação de compra
+   → Após confirmar, você verá a resposta (status: "success" ou "cancelled")
+
+3. RESTAURAR COMPRAS:
+   Clique em "Restaurar Compras"
+   → Você verá uma resposta (lista de compras ou "nenhuma compra para restaurar")
+
+4. VERIFICAR LOGS:
+   No console do Xcode (Cmd+Shift+C):
+     - "🔵 WebViewController.viewDidLoad"
+     - "🛒 Solicitação de compra: com.t800solucoes.personalnutri.mensal.1"
+     - "✅ Resultado IAP enviado ao JS"
+
+
+📝 COPIAR/COLAR PARA PRODUÇÃO (Seu servidor):
+═══════════════════════════════════════════════════════════════════════════════
+
+Arquivo: assinatura_PHP_FINAL.txt (neste repositório)
+
+Instruções:
+  1. Abra o arquivo assinatura_PHP_FINAL.txt
+  2. Procure pela seção "OPÇÃO 1: Manter sua página .php..."
+  3. Copie todo o código PHP (entre "<?php" e "</html>")
+  4. Cole no seu servidor em assinatura.php (ou crie novo arquivo)
+  5. Teste no navegador (deve funcionar normalmente)
+  6. Teste no app (clique nos botões de assinatura)
+
+
+⚠️  IMPORTANTE ANTES DE SUBMETER À APPLE:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. REMOVA CÓDIGO DE DEBUG:
+   - Comente ou remova o botão "TESTE IAP BRIDGE" do HTML/PHP
+   - Remova alerts de debug; use UI apropriada (toast, modal, etc.)
+   - Remova ou configure console.log() para production (log nível INFO)
+
+2. IMPLEMENTE VALIDAÇÃO SERVER-SIDE:
+   - Crie um endpoint PHP que valide recibos com a Apple
+   - Use App Store Server API ou verifyReceipt endpoint
+
+3. CONFIGURE PRODUCT IDs NO APP STORE CONNECT:
+   - Acesse appstoreconnect.apple.com
+   - Na sua app, vá para In-App Purchases
+   - Crie os 3 produtos com os IDs exatos:
+     • com.t800solucoes.personalnutri.mensal.1
+     • com.t800solucoes.personalnutri.semestral.1
+     • com.t800solucoes.personalnutri.anual.1
+   - Defina preços, descrições, artworks, etc.
+
+4. TESTE COM SANDBOX TESTER:
+   - Crie uma conta Sandbox no App Store Connect (Users and Access > Sandbox)
+   - Faça login no iPhone com a sandbox account
+   - Instale a app via TestFlight
+   - Teste todos os fluxos (mensal, semestral, anual, restore)
+
+5. SUBMETA PARA REVISÃO:
+   - Certifique que tudo está "Ready to Submit"
+   - Preencha screenshots, descrição, nota de liberação, etc.
+   - Submeta!
+
+
+📂 ARQUIVOS CRIADOS/ATUALIZADOS (local):
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ PersonalNutri/PersonalNutri/IAPManager.swift (atualizado)
+✓ PersonalNutri/PersonalNutri/WebViewController.swift (atualizado)
+✓ PersonalNutri/PersonalNutri/PersonalNutriApp.swift (atualizado)
+✓ PersonalNutri/PersonalNutri/Resources/assinatura.html (novo)
+✓ PersonalNutri/PersonalNutri/PersonalNutri.storekit (novo)
+
+
+🆘 ALGO DEU ERRADO? VERIFIQUE:
+═══════════════════════════════════════════════════════════════════════════════
+
+ERROR: "Product não encontrado"
+→ Produto não está em StoreKit config ou ProductIds não coincidem
+
+ERROR: "Compras desativadas"
+→ iPhone não tem capacidade IAP habilitada; verifique Capabilities
+
+ERROR: Página não carrega
+→ Verifique URL remota (https://t800robodetreinos.com.br/appview/assinatura.php)
+→ Se remota falhar, tente assinatura.html local
+
+ERROR: window.webkit undefined
+→ A página não está sendo executada no WKWebView do app
+→ Pode ser resultado de carregamento de origem diferente (CORS, sandboxing)
+
+LOGS NÃO APARECEM NO CONSOLE:
+→ Xcode > View > Debug Area > Show Console (ou Cmd+Shift+C)
+
+═══════════════════════════════════════════════════════════════════════════════
+ FIM DO RESUMO
+═══════════════════════════════════════════════════════════════════════════════
+
+Qualquer dúvida, consulte os logs do Xcode ou abra Safari Developer Tools
+(iPhone: Settings > Safari > Advanced > Web Inspector > ON)
