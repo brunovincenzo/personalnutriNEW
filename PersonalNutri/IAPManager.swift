@@ -26,6 +26,8 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
 
     func start() {
         print("🚀 IAPManager.start() chamado!")
+        print("📋 Bundle ID: \(Bundle.main.bundleIdentifier ?? "NENHUM")")
+        print("💳 Pagamentos disponíveis: \(SKPaymentQueue.canMakePayments())")
         SKPaymentQueue.default().add(self)
         fetchProducts()
     }
