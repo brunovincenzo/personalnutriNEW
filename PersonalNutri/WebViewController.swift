@@ -32,13 +32,11 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(webView)
 
-        if let url = URL(string: "https://t800robodetreinos.com.br/appview/assinatura.php") {
+        // Carregar o site principal (com login)
+        if let url = URL(string: "https://t800robodetreinos.com.br") {
             let request = URLRequest(url: url)
             webView.load(request)
-            print("🔵 Carregando assinatura remota")
-        } else if let local = Bundle.main.url(forResource: "assinatura", withExtension: "html") {
-            webView.loadFileURL(local, allowingReadAccessTo: local.deletingLastPathComponent())
-            print("🔵 Carregando assinatura local")
+            print("🔵 Carregando site principal")
         }
     }
 
