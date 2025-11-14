@@ -7,143 +7,82 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         print("🔵 WebViewController.viewDidLoad")
-
+        
+        let configuration = WKWebViewConfiguration()
         let contentController = WKUserContentController()
+        
         contentController.add(self, name: "iap")
         print("✅ Handler 'iap' registrado")
-
-        let config = WKWebViewConfiguration()
-        config.userContentController = contentController
-        config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
-
-        webView = WKWebView(frame: view.bounds, configuration: config)
+        
+        configuration.userContentController = contentController
+        
+        webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = self
-        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(webView)
-
-        // Carregar a página de assinatura (com cache-busting)
+        
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            webView.topAnchor.constraint(equalTo: view.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
+        
+        // Carregar página com cache busting
         let timestamp = Int(Date().timeIntervalSince1970)
         if let url = URL(string: "https://t800robodetreinos.com.br/in-app.php?v=\(timestamp)") {
             var request = URLRequest(url: url)
             request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            print("🔵 Carregando: \(url.absoluteString)")
             webView.load(request)
-            print("🔵 Carregando: \(url)")
         }
     }
-
+    
     // MARK: - WKNavigationDelegate
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        print("✅ Página carregada com sucesso")
+        print("✅ Página carregada")
         
-        // Limpar cache e cookies
-        let dataStore = WKWebsiteDataStore.default()
-        dataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
-            dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records, completionHandler: {
-                print("🗑️ Cache limpo")
-            })
-        }
-        
-        // Testar se o handler está acessível
-        let testJS = """
-        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iap) {
-            console.log('✅ Bridge disponível');
-            true;
-        } else {
-            console.log('❌ Bridge NÃO disponível');
-            false;
-        }
-        """
+        let testJS = "(function() { return window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iap ? 'bridge OK' : 'bridge NÃO OK'; })();"
         
         webView.evaluateJavaScript(testJS) { result, error in
-            if let result = result as? Bool {
-                print(result ? "✅ JS confirma: bridge disponível" : "❌ JS confirma: bridge NÃO disponível")
-            }
-        }
-        
-        // Verificar se o debug console existe na página
-        let checkDebugConsole = """
-        if (document.getElementById('debug-console')) {
-            'DEBUG CONSOLE ENCONTRADO';
-        } else {
-            'DEBUG CONSOLE NÃO ENCONTRADO';
-        }
-        """
-        
-        webView.evaluateJavaScript(checkDebugConsole) { result, error in
-            if let msg = result as? String {
-                print("📄 Verificação: \(msg)")
-            }
-        }
-        
-        // Forçar reload da página se debug console não existir
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            webView.evaluateJavaScript("document.getElementById('debug-console') ? 'OK' : 'RELOAD'") { result, error in
-                if let msg = result as? String, msg == "RELOAD" {
-                    print("⚠️ Página antiga detectada - forçando reload...")
-                    webView.reloadFromOrigin()
-                }
+            if let result = result {
+                print("✅ \(result)")
             }
         }
     }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        print("❌ Erro ao carregar página: \(error.localizedDescription)")
+        print("❌ Erro: \(error.localizedDescription)")
     }
-
+    
     // MARK: - WKScriptMessageHandler
 
-    func userContentController(_ userContentController: WKUserContentController,
-                               didReceive message: WKScriptMessage) {
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
 
-        print("🟢 MENSAGEM RECEBIDA DO JS!")
-        print("   Name: \(message.name)")
-        print("   Body: \(message.body)")
+        print("🟢 MENSAGEM DO JS!")
+        print("📩 \(message.body)")
 
-        guard message.name == "iap" else {
-            print("⚠️ Ignorando mensagem de handler diferente")
-            return
-        }
-
-        guard let body = message.body as? [String: Any],
-              let action = body["action"] as? String else {
-            print("❌ Body inválido ou sem action")
-            return
-        }
-
-        print("🎯 Action: \(action)")
+        guard message.name == "iap" else { return }
+        guard let body = message.body as? [String: Any], let action = body["action"] as? String else { return }
 
         switch action {
-
         case "purchase":
-            guard let productId = body["productId"] as? String else {
-                print("❌ ProductId não encontrado")
-                return
-            }
+            guard let productId = body["productId"] as? String else { return }
             let appAccountToken = body["appAccountToken"] as? String
-            print("🛒 Iniciando compra: \(productId)")
-            print("   Token: \(appAccountToken ?? "nil")")
-
+            print("🛒 Compra: \(productId)")
             IAPManager.shared.purchase(productId: productId, appAccountToken: appAccountToken) { result in
-                print("💰 Resultado da compra: \(result.status)")
                 self.sendIAPResultToJS(result: result)
             }
-
         case "restore":
-            print("♻️ Iniciando restore")
+            print("♻️ Restore")
             IAPManager.shared.restorePurchases { result in
-                print("♻️ Resultado do restore: \(result.status)")
                 self.sendIAPResultToJS(result: result)
             }
-
-        case "debug":
-            print("🐞 Debug test OK - bridge funcionando!")
-            let testResult = IAPResult(status: "success", productId: nil, transactionId: nil, message: "Bridge teste OK")
-            sendIAPResultToJS(result: testResult)
-
         default:
-            print("⚠️ Action desconhecida: \(action)")
+            print("⚠️ Ação: \(action)")
         }
     }
 
@@ -154,29 +93,12 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
             "transactionId": result.transactionId ?? "",
             "message": result.message ?? ""
         ]
-
         guard let jsonData = try? JSONSerialization.data(withJSONObject: dict),
-              let jsonString = String(data: jsonData, encoding: .utf8) else {
-            print("❌ Erro ao gerar JSON")
-            return
-        }
-
-        let js = "if(window.iapResult){window.iapResult(\(jsonString));}"
-        print("📤 Enviando resultado para JS: \(js)")
-
+              let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        
+        let js = "window.iapResult && window.iapResult(\(jsonString));"
         DispatchQueue.main.async {
-            self.webView.evaluateJavaScript(js) { _, error in
-                if let error = error {
-                    print("❌ Erro ao executar JS: \(error.localizedDescription)")
-                } else {
-                    print("✅ Resultado enviado para JS com sucesso")
-                }
-            }
+            self.webView.evaluateJavaScript(js, completionHandler: nil)
         }
-    }
-    
-    deinit {
-        webView?.configuration.userContentController.removeScriptMessageHandler(forName: "iap")
-        print("🔴 WebViewController deinit - handler removido")
     }
 }
