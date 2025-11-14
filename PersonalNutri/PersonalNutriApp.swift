@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct PersonalNutriApp: App {
     init() {
+        print("🎯 PersonalNutriApp.init() - Iniciando IAPManager...")
         // Inicia o observer de IAP o quanto antes para receber transações do StoreKit
         IAPManager.shared.start()
     }

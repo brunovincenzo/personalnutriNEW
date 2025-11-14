@@ -25,6 +25,7 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
     ]
 
     func start() {
+        print("🚀 IAPManager.start() chamado!")
         SKPaymentQueue.default().add(self)
         fetchProducts()
     }
