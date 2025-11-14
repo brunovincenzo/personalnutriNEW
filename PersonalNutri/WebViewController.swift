@@ -11,21 +11,11 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
 
         let contentController = WKUserContentController()
         contentController.add(self, name: "iap")
-
-        let testEmail = "teste@local"
-        let appUUID = UUID().uuidString
-        let escapedEmail = testEmail.replacingOccurrences(of: "'", with: "\\'")
-        let escapedUUID = appUUID.replacingOccurrences(of: "'", with: "\\'")
-        let jsInit = "window.USER_EMAIL = '\(escapedEmail)'; window.APP_UUID = '\(escapedUUID)';"
-        let userScript = WKUserScript(source: jsInit, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-        contentController.addUserScript(userScript)
-
-        let jsIapResult = "(function(){if (!window.iapResult) {window.iapResult = function(result) {try { console.log('iapResult', result); } catch(e){}};}})()"
-        let iapResultScript = WKUserScript(source: jsIapResult, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-        contentController.addUserScript(iapResultScript)
+        print("✅ Handler 'iap' registrado")
 
         let config = WKWebViewConfiguration()
         config.userContentController = contentController
+        config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
 
         webView = WKWebView(frame: view.bounds, configuration: config)
         webView.navigationDelegate = self
@@ -36,43 +26,89 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
         if let url = URL(string: "https://t800robodetreinos.com.br/in-app.php") {
             let request = URLRequest(url: url)
             webView.load(request)
-            print("🔵 Carregando página de assinatura: in-app.php")
+            print("🔵 Carregando: \(url)")
         }
     }
+
+    // MARK: - WKNavigationDelegate
+    
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        print("✅ Página carregada com sucesso")
+        
+        // Testar se o handler está acessível
+        let testJS = """
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iap) {
+            console.log('✅ Bridge disponível');
+            true;
+        } else {
+            console.log('❌ Bridge NÃO disponível');
+            false;
+        }
+        """
+        
+        webView.evaluateJavaScript(testJS) { result, error in
+            if let result = result as? Bool {
+                print(result ? "✅ JS confirma: bridge disponível" : "❌ JS confirma: bridge NÃO disponível")
+            }
+        }
+    }
+    
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        print("❌ Erro ao carregar página: \(error.localizedDescription)")
+    }
+
+    // MARK: - WKScriptMessageHandler
 
     func userContentController(_ userContentController: WKUserContentController,
                                didReceive message: WKScriptMessage) {
 
-        guard message.name == "iap" else { return }
+        print("🟢 MENSAGEM RECEBIDA DO JS!")
+        print("   Name: \(message.name)")
+        print("   Body: \(message.body)")
+
+        guard message.name == "iap" else {
+            print("⚠️ Ignorando mensagem de handler diferente")
+            return
+        }
 
         guard let body = message.body as? [String: Any],
               let action = body["action"] as? String else {
-            print("Erro: body inválido")
+            print("❌ Body inválido ou sem action")
             return
         }
+
+        print("🎯 Action: \(action)")
 
         switch action {
 
         case "purchase":
-            guard let productId = body["productId"] as? String else { return }
+            guard let productId = body["productId"] as? String else {
+                print("❌ ProductId não encontrado")
+                return
+            }
             let appAccountToken = body["appAccountToken"] as? String
-            print("🛒 Compra: \(productId)")
+            print("🛒 Iniciando compra: \(productId)")
+            print("   Token: \(appAccountToken ?? "nil")")
 
             IAPManager.shared.purchase(productId: productId, appAccountToken: appAccountToken) { result in
+                print("💰 Resultado da compra: \(result.status)")
                 self.sendIAPResultToJS(result: result)
             }
 
         case "restore":
-            print("♻️ Restore")
+            print("♻️ Iniciando restore")
             IAPManager.shared.restorePurchases { result in
+                print("♻️ Resultado do restore: \(result.status)")
                 self.sendIAPResultToJS(result: result)
             }
 
         case "debug":
-            print("🐞 Debug OK")
+            print("🐞 Debug test OK - bridge funcionando!")
+            let testResult = IAPResult(status: "success", productId: nil, transactionId: nil, message: "Bridge teste OK")
+            sendIAPResultToJS(result: testResult)
 
         default:
-            break
+            print("⚠️ Action desconhecida: \(action)")
         }
     }
 
@@ -86,13 +122,26 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: dict),
               let jsonString = String(data: jsonData, encoding: .utf8) else {
+            print("❌ Erro ao gerar JSON")
             return
         }
 
-        let js = "window.iapResult && window.iapResult(\(jsonString));"
+        let js = "if(window.iapResult){window.iapResult(\(jsonString));}"
+        print("📤 Enviando resultado para JS: \(js)")
 
         DispatchQueue.main.async {
-            self.webView.evaluateJavaScript(js)
+            self.webView.evaluateJavaScript(js) { _, error in
+                if let error = error {
+                    print("❌ Erro ao executar JS: \(error.localizedDescription)")
+                } else {
+                    print("✅ Resultado enviado para JS com sucesso")
+                }
+            }
         }
+    }
+    
+    deinit {
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: "iap")
+        print("🔴 WebViewController deinit - handler removido")
     }
 }
