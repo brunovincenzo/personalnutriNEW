@@ -22,9 +22,11 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(webView)
 
-        // Carregar a página de assinatura
-        if let url = URL(string: "https://t800robodetreinos.com.br/in-app.php") {
-            let request = URLRequest(url: url)
+        // Carregar a página de assinatura (com cache-busting)
+        let timestamp = Int(Date().timeIntervalSince1970)
+        if let url = URL(string: "https://t800robodetreinos.com.br/in-app.php?v=\(timestamp)") {
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             webView.load(request)
             print("🔵 Carregando: \(url)")
         }
