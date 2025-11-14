@@ -30,9 +30,8 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
         
-        // Carregar página com cache busting
-        let timestamp = Int(Date().timeIntervalSince1970)
-        if let url = URL(string: "https://t800robodetreinos.com.br/in-app.php?v=\(timestamp)") {
+        // Carregar página inicial do sistema (usuário navega normalmente)
+        if let url = URL(string: "https://t800robodetreinos.com.br/") {
             var request = URLRequest(url: url)
             request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             print("🔵 Carregando: \(url.absoluteString)")
@@ -43,14 +42,22 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
     // MARK: - WKNavigationDelegate
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        print("✅ Página carregada")
+        print("✅ Página carregada: \(webView.url?.absoluteString ?? "desconhecida")")
         
-        let testJS = "(function() { return window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iap ? 'bridge OK' : 'bridge NÃO OK'; })();"
-        
-        webView.evaluateJavaScript(testJS) { result, error in
-            if let result = result {
-                print("✅ \(result)")
+        // Detecta se está na página de assinaturas (in-app.php)
+        if let currentUrl = webView.url?.absoluteString, currentUrl.contains("in-app.php") {
+            print("💳 Página de assinaturas detectada - Ativando bridge IAP")
+            
+            // Testa o bridge JavaScript
+            let testJS = "(function() { return window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iap ? 'bridge OK' : 'bridge NÃO OK'; })();"
+            
+            webView.evaluateJavaScript(testJS) { result, error in
+                if let result = result {
+                    print("✅ IAP Bridge: \(result)")
+                }
             }
+        } else {
+            print("📄 Navegação normal - Bridge IAP ficará disponível quando acessar in-app.php")
         }
     }
     
