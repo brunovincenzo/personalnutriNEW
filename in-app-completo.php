@@ -51,9 +51,9 @@ if (!isset($_SESSION['USER'])) {
     <script>
     // Produtos IAP
     const PRODUCTS = {
-      mensal: 'com.t800solucoes.personalnutri.mensal.1',
-      semestral: 'com.t800solucoes.personalnutri.semestral.1',
-      anual: 'com.t800solucoes.personalnutri.anual.1'
+      mensal: 'com.t800solucoes.PersonalNutri.PersonalNutri.mensal.1',
+      semestral: 'com.t800solucoes.PersonalNutri.PersonalNutri.semestral.1',
+      anual: 'com.t800solucoes.PersonalNutri.PersonalNutri.anual.1'
     };
 
     // Console de debug visível

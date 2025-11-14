@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <StoreKit>
     <Configuration name="Default">
-        <Product id="com.t800solucoes.PersonalNutri.PersonalNutri.mensal.1" type="AutoRenewableSubscription">
+        <Product id="com.t800solucoes.personalnutri.mensal.1" type="AutoRenewableSubscription">
             <LocalizedMetadata locale="pt-BR">
                 <DisplayName>Plano Mensal</DisplayName>
                 <Description>Assinatura mensal - Acesso completo ao app</Description>
@@ -15,7 +15,7 @@
             <FamilySharingEnabled>false</FamilySharingEnabled>
         </Product>
 
-        <Product id="com.t800solucoes.PersonalNutri.PersonalNutri.semestral.1" type="AutoRenewableSubscription">
+        <Product id="com.t800solucoes.personalnutri.semestral.1" type="AutoRenewableSubscription">
             <LocalizedMetadata locale="pt-BR">
                 <DisplayName>Plano Semestral</DisplayName>
                 <Description>Assinatura semestral - 6 meses de acesso</Description>
@@ -29,7 +29,7 @@
             <FamilySharingEnabled>false</FamilySharingEnabled>
         </Product>
 
-        <Product id="com.t800solucoes.PersonalNutri.PersonalNutri.anual.1" type="AutoRenewableSubscription">
+        <Product id="com.t800solucoes.personalnutri.anual.1" type="AutoRenewableSubscription">
             <LocalizedMetadata locale="pt-BR">
                 <DisplayName>Plano Anual</DisplayName>
                 <Description>Assinatura anual - 12 meses de acesso</Description>
