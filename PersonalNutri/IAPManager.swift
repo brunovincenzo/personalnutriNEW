@@ -19,9 +19,9 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
 
     // SEUS PRODUCT IDs REAIS:
     private let productIdentifiers: Set<String> = [
-        "com.t800solucoes.personalnutri.mensal.1",
-        "com.t800solucoes.personalnutri.semestral.1",
-        "com.t800solucoes.personalnutri.anual.1"
+        "com.t800solucoes.PersonalNutri.PersonalNutri.mensal.1",
+        "com.t800solucoes.PersonalNutri.PersonalNutri.semestral.1",
+        "com.t800solucoes.PersonalNutri.PersonalNutri.anual.1"
     ]
 
     func start() {
