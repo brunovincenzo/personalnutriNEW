@@ -16,6 +16,7 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
     private var products: [String: SKProduct] = [:]
     private var onPurchaseCompletion: ((IAPResult) -> Void)?
     private var onRestoreCompletion: ((IAPResult) -> Void)?
+    private var productsRequest: SKProductsRequest? // MANTER REFERÊNCIA FORTE
 
     // SEUS PRODUCT IDs REAIS:
     private let productIdentifiers: Set<String> = [
@@ -38,6 +39,7 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
         print("📱 Bundle ID:", Bundle.main.bundleIdentifier ?? "ERRO")
         
         let request = SKProductsRequest(productIdentifiers: productIdentifiers)
+        productsRequest = request  // MANTER REFERÊNCIA FORTE
         request.delegate = self
         print("🌐 StoreKit request criado, iniciando...")
         request.start()
@@ -63,6 +65,9 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
         if products.isEmpty {
             print("🚨 NENHUM PRODUTO FOI CARREGADO! Verifique StoreKit Configuration")
         }
+        
+        // Limpar referência após receber resposta
+        productsRequest = nil
     }
 
     func request(_ request: SKRequest, didFailWithError error: Error) {
@@ -72,6 +77,9 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
         print("💡 SANDBOX: Bundle ID deve ser EXATO no App Store Connect")
         print("💡 Produtos devem estar 'Ready to Submit' com screenshot")
         print("💡 Aguarde até 6h após configurar no App Store Connect")
+        
+        // Limpar referência após erro
+        productsRequest = nil
     }
 
     // MARK: - Public
