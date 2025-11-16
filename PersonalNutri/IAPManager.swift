@@ -107,10 +107,10 @@ class IAPManager: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObser
 
         onPurchaseCompletion = completion
 
-        let payment = SKPayment(product: product)
+        let payment = SKMutablePayment(product: product)
         // Aplicar appAccountToken para auxiliar na identificação do usuário no Server-side validation
         if let token = appAccountToken, !token.isEmpty {
-            payment.setValue(token, forKey: "applicationUsername")
+            payment.applicationUsername = token
         }
         SKPaymentQueue.default().add(payment)
     }
