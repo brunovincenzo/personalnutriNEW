@@ -1,9 +1,11 @@
 import UIKit
 import WebKit
+import UniformTypeIdentifiers
 
-class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
+class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIDocumentPickerDelegate {
 
     var webView: WKWebView!
+    var fileUploadCompletionHandler: ((URL?) -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -186,6 +188,174 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
             completionHandler(alert.textFields?.first?.text)
         })
         present(alert, animated: true)
+    }
+    
+    // ✅ Suporte a upload de arquivos e câmera (input type="file")
+    @available(iOS 15.0, *)
+    func webView(_ webView: WKWebView,
+                 runOpenPanelWith parameters: WKOpenPanelParameters,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping ([URL]?) -> Void) {
+        
+        print("📸 Upload de arquivo solicitado")
+        
+        // Salvar o completion handler
+        self.fileUploadCompletionHandler = { url in
+            if let url = url {
+                completionHandler([url])
+            } else {
+                completionHandler(nil)
+            }
+        }
+        
+        let alert = UIAlertController(title: "Selecionar Imagem", message: nil, preferredStyle: .actionSheet)
+        
+        // Opção: Tirar Foto
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            alert.addAction(UIAlertAction(title: "📷 Tirar Foto", style: .default) { _ in
+                self.openCamera()
+            })
+        }
+        
+        // Opção: Escolher da Galeria
+        if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+            alert.addAction(UIAlertAction(title: "🖼️ Galeria de Fotos", style: .default) { _ in
+                self.openPhotoLibrary()
+            })
+        }
+        
+        // Opção: Escolher Arquivo de Imagem (iCloud, Arquivos, etc.)
+        alert.addAction(UIAlertAction(title: "📁 Escolher Arquivo", style: .default) { _ in
+            self.openDocumentPicker()
+        })
+        
+        // Cancelar
+        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel) { _ in
+            completionHandler(nil)
+            self.fileUploadCompletionHandler = nil
+        })
+        
+        // Para iPad (apresentar como popover)
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = self.view
+            popover.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        
+        present(alert, animated: true)
+    }
+    
+    // MARK: - Camera, Galeria e Arquivos
+    
+    private func openCamera() {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = self
+        picker.allowsEditing = false
+        present(picker, animated: true)
+    }
+    
+    private func openPhotoLibrary() {
+        let picker = UIImagePickerController()
+        picker.sourceType = .photoLibrary
+        picker.delegate = self
+        picker.allowsEditing = false
+        present(picker, animated: true)
+    }
+    
+    private func openDocumentPicker() {
+        // Apenas imagens: JPEG, PNG, HEIC, GIF, TIFF, BMP, WebP
+        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [
+            .image,           // Todas as imagens
+            .jpeg,            // JPEG
+            .png,             // PNG
+            .heic,            // HEIC (iPhone)
+            .gif,             // GIF
+            .tiff,            // TIFF
+            .bmp,             // BMP
+            .webP             // WebP
+        ])
+        documentPicker.delegate = self
+        documentPicker.allowsMultipleSelection = false
+        present(documentPicker, animated: true)
+    }
+    
+    // MARK: - UIImagePickerControllerDelegate
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        picker.dismiss(animated: true)
+        
+        guard let image = info[.originalImage] as? UIImage else {
+            fileUploadCompletionHandler?(nil)
+            fileUploadCompletionHandler = nil
+            return
+        }
+        
+        // Salvar temporariamente e retornar URL
+        if let imageData = image.jpegData(compressionQuality: 0.8) {
+            let tempDir = FileManager.default.temporaryDirectory
+            let fileName = "upload_\(UUID().uuidString).jpg"
+            let fileURL = tempDir.appendingPathComponent(fileName)
+            
+            do {
+                try imageData.write(to: fileURL)
+                print("✅ Foto salva: \(fileURL.path)")
+                fileUploadCompletionHandler?(fileURL)
+            } catch {
+                print("❌ Erro ao salvar foto: \(error)")
+                fileUploadCompletionHandler?(nil)
+            }
+        } else {
+            fileUploadCompletionHandler?(nil)
+        }
+        
+        fileUploadCompletionHandler = nil
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
+        fileUploadCompletionHandler?(nil)
+        fileUploadCompletionHandler = nil
+    }
+    
+    // MARK: - UIDocumentPickerDelegate
+    
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        controller.dismiss(animated: true)
+        
+        guard let pickedURL = urls.first else {
+            fileUploadCompletionHandler?(nil)
+            fileUploadCompletionHandler = nil
+            return
+        }
+        
+        // Copiar arquivo para diretório temporário (necessário para upload)
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = pickedURL.lastPathComponent
+        let tempURL = tempDir.appendingPathComponent(fileName)
+        
+        do {
+            // Remover arquivo temporário anterior se existir
+            if FileManager.default.fileExists(atPath: tempURL.path) {
+                try FileManager.default.removeItem(at: tempURL)
+            }
+            
+            // Copiar arquivo selecionado
+            try FileManager.default.copyItem(at: pickedURL, to: tempURL)
+            print("✅ Arquivo copiado: \(tempURL.path)")
+            fileUploadCompletionHandler?(tempURL)
+        } catch {
+            print("❌ Erro ao copiar arquivo: \(error)")
+            fileUploadCompletionHandler?(nil)
+        }
+        
+        fileUploadCompletionHandler = nil
+    }
+    
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        controller.dismiss(animated: true)
+        fileUploadCompletionHandler?(nil)
+        fileUploadCompletionHandler = nil
     }
     
     // MARK: - WKScriptMessageHandler
