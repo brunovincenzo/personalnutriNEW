@@ -1,33 +1,244 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PersonalNutriApp - Assinaturas</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<?php
+	session_start();
+	# Includes iniciais
+	include('template/header.php'); 
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: white;
-            min-height: 100vh;
+	$currentPage = 'home';
+	include('template/menu.php');
+
+	if(isset($_GET['accept']) && $_GET['accept'] == 1) {
+		$userDAOTemp = new UserDAO();
+
+		$data = [
+			'campo' => "compl_date",
+			'valor' => date('Y-m-d'),
+			'id' => $_SESSION['USER']['id_user']
+		];
+		$userDAOTemp->updateUser($data);
+
+		$data = [
+			'campo' => "flg_compl",
+			'valor' => "1",
+			'id' => $_SESSION['USER']['id_user']
+		];
+		$userDAOTemp->updateUser($data);
+
+		if (headers_sent()) {
+			echo ("<script>location.href='home.php'</script>");
+		} else {
+			header("Location: home.php");
+		}
+	}
+
+	// ✅ FUNÇÃO PARA PEGAR EMAIL DO USUÁRIO LOGADO (para appAccountToken)
+	function getUserEmailFromSession() 
+	{
+		// Verificar se existe email na sessão do usuário
+		if (isset($_SESSION['USER']['email']) && !empty($_SESSION['USER']['email'])) {
+			return $_SESSION['USER']['email'];
+		}
+		
+		// Verificar outros campos possíveis na sessão
+		if (isset($_SESSION['USER']['user_email']) && !empty($_SESSION['USER']['user_email'])) {
+			return $_SESSION['USER']['user_email'];
+		}
+		
+		// Se não encontrar email na sessão, usar email padrão para debug
+		return 'usuario@personalnutri.com';
+	}
+
+	function uuid5_from_email(string $email): string 
+	{
+		if (!$email) return '';
+
+		$ns = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // namespace DNS
+		$ns_hex = str_replace('-', '', $ns);
+		$ns_bin = pack('H*', $ns_hex);
+		$hash = sha1($ns_bin . strtolower(trim($email)));
+
+		return sprintf('%08s-%04s-%04x-%04x-%12s',
+			substr($hash,0,8), substr($hash,8,4),
+			(hexdec(substr($hash,12,4)) & 0x0fff) | 0x5000,
+			(hexdec(substr($hash,16,4)) & 0x3fff) | 0x8000,
+			substr($hash,20,12)
+		);
+	}
+
+?>
+	<style>
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #039be5, #1e90ff);
+            border-radius: 50%;
+            margin: 0 auto 20px;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: white;
+            font-weight: bold;
         }
 
-        .container {
-            background: white;
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .plans {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .plan {
+            border: 2px solid #039be5;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .plan:hover {
+            border-color: #039be5;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 191, 255, 0.3);
+        }
+
+        .plan.popular {
+            border-color: #039be5;
+            background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #039be5;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .plan-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .plan-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #039be5;
+            margin-bottom: 5px;
+        }
+
+        .plan-period {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .plan-savings {
+            background: #ff4444;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .purchase-btn {
+            background: linear-gradient(135deg, #039be5, #1e90ff);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+
+        .purchase-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 191, 255, 0.4);
+        }
+
+        .purchase-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .restore-btn {
+            background: linear-gradient(135deg, #666, #888);
+            color: white;
+            border: none;
+            padding: 12px 25px;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-            max-width: 500px;
-            width: 90%;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .restore-btn:hover {
+            background: linear-gradient(135deg, #555, #777);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .restore-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .benefits {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .benefits h3 {
+            color: #333;
+            margin-bottom: 15px;
             text-align: center;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .benefit-icon {
+            color: #039be5;
+            margin-right: 10px;
+            font-weight: bold;
         }
 
         .logo {
@@ -321,85 +532,116 @@
             }
         }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">PN</div>
-        <h1>PersonalNutriApp</h1>
-        <p class="subtitle">Desbloqueie todo o potencial da IA para sua jornada profissional</p>
+    <!-- Conteúdo principal -->
+    <main>
+	<?php #var_dump($_SESSION['USER']);?>
+		<?php
+			if($_SESSION['USER']['tipo_user'] == "A" && $_SESSION['USER']['flg_compl'] == 0) { ?>
+				<div class="container">
+					<div class="row">
+						<div class="col s12">
+							<h4><?php echo __('welcome_message'); ?></h4>
+							<p><?php echo __('conduct_act'); ?></p>
 
-        <div class="plans">
-            <div class="plan" onclick="selectPlan('mensal')">
-                <div class="plan-name">Plano Mensal</div>
-                <div class="plan-price" id="price-mensal">Carregando...</div>
-                <div class="plan-period">por mês</div>
-                <button class="purchase-btn" onclick="purchaseProduct('mensal', event)">
-                    Assinar Mensal
-                </button>
-            </div>
+						</div>
+					</div>
+				</div>
+			<?php } else { ?>
+        <div class="container">
+			<h4>PersonalNutriApp</h4>
+			<p class="subtitle"><?php echo __('desblock'); ?></p>
 
-            <div class="plan" onclick="selectPlan('semestral')">
-                <div class="plan-name">Plano Semestral</div>
-                <div class="plan-price" id="price-semestral">Carregando...</div>
-                <div class="plan-period">6 meses</div>
-                <div class="plan-savings">ECONOMIZE 11%</div>
-                <button class="purchase-btn" onclick="purchaseProduct('semestral', event)">
-                    Assinar Semestral
-                </button>
-            </div>
+			<div class="plans">
+				<div class="plan" onclick="selectPlan('mensal')">
+					<div class="plan-name"><?php echo __('signature_monthly'); ?></div>
+					<div class="plan-price" id="price-mensal">Carregando...</div>
+					<div class="plan-period"><?php echo __('monthly'); ?></div>
+					<button class="purchase-btn" onclick="purchaseProduct('mensal', event)">
+						<?php echo __('assine_monthly'); ?>
+					</button>
+				</div>
 
-            <div class="plan" onclick="selectPlan('anual')">
-                <div class="plan-name">Plano Anual</div>
-                <div class="plan-price" id="price-anual">Carregando...</div>
-                <div class="plan-period">12 meses</div>
-                <div class="plan-savings">ECONOMIZE 17%</div>
-                <button class="purchase-btn" onclick="purchaseProduct('anual', event)">
-                    Assinar Anual
-                </button>
-            </div>
+				<div class="plan" onclick="selectPlan('semestral')">
+					<div class="plan-name"><?php echo __('signature_semestral'); ?></div>
+					<div class="plan-price" id="price-semestral">Carregando...</div>
+					<div class="plan-period">6 <?php echo __('months'); ?></div>
+					<div class="plan-savings"><?php echo __('save'); ?> 11%</div>
+					<button class="purchase-btn" onclick="purchaseProduct('semestral', event)">
+					<?php echo __('assine_semestral'); ?>
+					</button>
+				</div>
+
+				<div class="plan" onclick="selectPlan('anual')">
+					<div class="plan-name"><?php echo __('signature_anual'); ?></div>
+					<div class="plan-price" id="price-anual">Carregando...</div>
+					<div class="plan-period">12 <?php echo __('months'); ?></div>
+					<div class="plan-savings"><?php echo __('save'); ?> 17%</div>
+					<button class="purchase-btn" onclick="purchaseProduct('anual', event)">
+					<?php echo __('assine_anual'); ?>
+					</button>
+				</div>
+			</div>
+
+			<!-- ✅ BOTÃO RESTAURAR COMPRAS (EXIGIDO PELA APPLE) -->
+			<div class="restore-section">
+				<button class="restore-btn" id="restoreBtn" onclick="restorePurchases()">
+				<?php echo __('signature_restore'); ?>
+				</button>
+				<p class="restore-info"><?php echo __('signature_restore_info'); ?></p>
+			</div>
+			<br><br>
+			<div class="benefits">
+				<h3><?php echo __('benefits'); ?></h3>
+				<div class="benefit-item">
+					<span class="benefit-icon">✓</span>
+					<span><?php echo __('benefits_item1'); ?></span>
+				</div>
+				<div class="benefit-item">
+					<span class="benefit-icon">✓</span>
+					<span><?php echo __('benefits_item2'); ?></span>
+				</div>
+				<div class="benefit-item">
+					<span class="benefit-icon">✓</span>
+					<span><?php echo __('benefits_item3'); ?></span>
+				</div>
+				<div class="benefit-item">
+					<span class="benefit-icon">✓</span>
+					<span><?php echo __('benefits_item4'); ?></span>
+				</div>
+				<div class="benefit-item">
+					<span class="benefit-icon">✓</span>
+					<span><?php echo __('benefits_item5'); ?></span>
+				</div>
+			</div>
+			<br><br>
         </div>
-
-        <!-- ✅ BOTÃO RESTAURAR COMPRAS (EXIGIDO PELA APPLE) -->
-        <div class="restore-section">
-            <button class="restore-btn" id="restoreBtn" onclick="restorePurchases()">
-                ♻️ Restaurar Compras
-            </button>
-            <p class="restore-info">Já possui uma assinatura? Restaure suas compras anteriores</p>
-        </div>
-
-        <div class="benefits">
-            <h3>✨ Benefícios do PersonalNutriApp</h3>
-            <div class="benefit-item">
-                <span class="benefit-icon">✓</span>
-                <span>Programações de treino personalizadas pra seus alunos</span>
-            </div>
-            <div class="benefit-item">
-                <span class="benefit-icon">✓</span>
-                <span>Planos alimentares personalizados pra seus alunos</span>
-            </div>
-            <div class="benefit-item">
-                <span class="benefit-icon">✓</span>
-                <span>Acompanhamento individualizado</span>
-            </div>
-            <div class="benefit-item">
-                <span class="benefit-icon">✓</span>
-                <span>Cadastro de Alunos</span>
-            </div>
-            <div class="benefit-item">
-                <span class="benefit-icon">✓</span>
-                <span>App para seus alunos</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Debug Console -->
-    <button class="toggle-debug" onclick="toggleDebug()">Debug</button>
-    <div id="debugConsole" class="debug-console" style="display: none;">
-        <div class="debug-header">🔧 DEBUG CONSOLE - IAP BRIDGE</div>
-        <div id="debugLogs"></div>
-    </div>
-
+		 <!-- Debug Console -->
+		<!-- <button class="toggle-debug" onclick="toggleDebug()">Debug</button> -->
+		<div id="debugConsole" class="debug-console" style="display: none;">
+			<div class="debug-header">🔧 DEBUG CONSOLE - IAP BRIDGE</div>
+			<div id="debugLogs"></div>
+			</div>
+	
+		<?php } ?>
+    </main>
+    
+    <!-- Scripts do Material Design -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializa o menu lateral para dispositivos móveis
+            var elems = document.querySelectorAll('.sidenav');
+            var instances = M.Sidenav.init(elems);
+            
+            // Inicializa tooltips
+            var tooltipElems = document.querySelectorAll('.tooltipped');
+            var tooltipInstances = M.Tooltip.init(tooltipElems);
+        });
+    </script>
+
+	<!-- In App Purchase Scripts -->
+	<script>
         let debugVisible = false;
         let logCount = 0;
         const maxLogs = 50;
@@ -477,6 +719,25 @@
             }
         }
 
+        // ✅ FUNÇÃO PARA PEGAR EMAIL DO USUÁRIO (para appAccountToken)
+        function getUserEmail() {
+            // 🎯 PEGAR EMAIL DA SESSÃO PHP
+            const userEmail = '<?php echo uuid5_from_email(getUserEmailFromSession()); ?>';
+            
+            // 🧪 DEBUG TEMPORÁRIO - REMOVER DEPOIS
+            const debugInfo = {
+                uuid: userEmail,
+                sessionEmail: '<?php echo $_SESSION["USER"]["email"] ?? "VAZIO"; ?>',
+                sessionUserId: '<?php echo $_SESSION["USER"]["id_user"] ?? "VAZIO"; ?>',
+                pageLoadTime: new Date().toISOString()
+            };
+            console.log('🧪 DEBUG SESSION:', debugInfo);
+            addDebugLog(`📧 Email obtido da sessão: ${userEmail}`, 'success');
+            addDebugLog(`🧪 Session Debug: ${JSON.stringify(debugInfo)}`, 'info');
+            
+            return userEmail;
+        }
+
         // IAP Functions
         function selectPlan(planType) {
             addDebugLog(`📋 Plano selecionado: ${planType}`, 'info');
@@ -515,6 +776,13 @@
 
             addDebugLog(`🆔 Product ID: ${productId}`, 'info');
 
+            // ✅ PEGAR EMAIL DO USUÁRIO PARA appAccountToken
+            const userEmail = getUserEmail();
+            addDebugLog(`👤 Email do usuário: ${userEmail}`, 'success');
+            
+            // 🧪 TESTE: Alertar email para confirmar
+           // alert(`🧪 DEBUG: Email que será enviado = ${userEmail}`);
+
             // Check if bridge is available
             if (!window.webkit || !window.webkit.messageHandlers || !window.webkit.messageHandlers.iap) {
                 addDebugLog('❌ Bridge não disponível - executando em browser?', 'error');
@@ -542,16 +810,18 @@
 
                 addDebugLog('🔒 Todos os botões desabilitados durante compra', 'info');
 
-                // Send purchase request to native iOS
+                // ✅ Send purchase request with appAccountToken (email)
                 const purchaseData = {
                     action: 'purchase',
                     productId: productId,
                     productType: productType,
+                    appAccountToken: userEmail, // ✅ EMAIL DO USUÁRIO AQUI!
                     timestamp: new Date().toISOString(),
                     requestId: Math.random().toString(36).substr(2, 9)
                 };
 
                 addDebugLog('📤 Enviando dados de compra para iOS:', 'info');
+                addDebugLog(`🎯 appAccountToken (email): ${userEmail}`, 'success');
                 addDebugLog(JSON.stringify(purchaseData, null, 2), 'info');
 
                 window.webkit.messageHandlers.iap.postMessage(purchaseData);
@@ -567,6 +837,21 @@
                 enablePurchaseButtons();
                 alert('Erro ao processar compra. Tente novamente.');
             }
+			<?php
+				$generatedUUID = uuid5_from_email(getUserEmailFromSession());
+				$info = array(
+					'uuid' => $generatedUUID,
+					'email' => $_SESSION['USER']['email'],
+					'id_user' => $_SESSION['USER']['id_user']
+				);
+
+				$userUUID = new UserUUIDDAO();
+
+				try {
+					$userUUID->registerUUID($info);
+				} catch (\Throwable $th) { }
+				
+			?>
         }
 
         function enablePurchaseButtons() {
@@ -576,7 +861,7 @@
             
             purchaseButtons.forEach((btn, index) => {
                 btn.disabled = false;
-                const texts = ['Assinar Mensal', 'Assinar Semestral', 'Assinar Anual'];
+				const texts = [<?="'".__('assine_monthly')."'";?>, <?="'".__('assine_semestral')."'";?>, <?="'".__('assine_anual')."'";?>];
                 btn.textContent = texts[index] || 'Assinar';
             });
             
@@ -829,10 +1114,49 @@
             }
         };
 
+        // ✅ FUNÇÃO PARA FORÇAR RELOAD DA WEBVIEW (SE NECESSÁRIO)
+        function forceWebViewReload() {
+            addDebugLog('🔄 Forçando reload da WebView...', 'info');
+            
+            if (!window.webkit?.messageHandlers?.iap) {
+                addDebugLog('⚠️ Bridge não disponível - usando reload local', 'warning');
+                window.location.reload();
+                return;
+            }
+
+            try {
+                const reloadData = {
+                    action: 'forceReload',
+                    reason: 'uuid_update',
+                    timestamp: new Date().toISOString()
+                };
+
+                window.webkit.messageHandlers.iap.postMessage(reloadData);
+                addDebugLog('✅ Solicitação de reload enviada para iOS', 'success');
+                
+            } catch (error) {
+                addDebugLog(`❌ Erro ao solicitar reload: ${error.message}`, 'error');
+                // Fallback para reload local
+                window.location.reload();
+            }
+        }
+
+        // 📋 API PARA CONTROLE MANUAL (SE NECESSÁRIO)
+        window.personalNutriSessionControl = {
+            forceReload: function() {
+                addDebugLog('🔔 Reload manual solicitado', 'success');
+                forceWebViewReload();
+            }
+        };
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             addDebugLog('🚀 Página carregada - Personal Nutri IAP', 'success');
-            addDebugLog('📱 Versão: 1.1 - Com Preços Dinâmicos e Restore', 'info');
+            addDebugLog('📱 Versão: 2.0 - Com Cache Management Automático', 'info');
+            
+            // ✅ Teste de obtenção de email
+            const testEmail = getUserEmail();
+            addDebugLog(`🧪 TESTE: Email obtido = ${testEmail}`, testEmail.includes('@') ? 'success' : 'warning');
             
             // ✅ Carregar informações dos produtos automaticamente
             setTimeout(() => {
@@ -861,5 +1185,13 @@
             };
         }
     </script>
+
+<p style="font-size: 13px; color: #666; text-align: center; margin-top: 30px;">
+  By subscribing, you agree to our
+  <a href="https://www.t800solucoes.com.br/termos-us" target="_blank" style="color: #007aff; text-decoration: none;">Terms of Use</a>
+  and
+  <a href="https://www.t800solucoes.com.br/privacidade-us" target="_blank" style="color: #007aff; text-decoration: none;">Privacy Policy</a>.
+</p>
+
 </body>
 </html>
