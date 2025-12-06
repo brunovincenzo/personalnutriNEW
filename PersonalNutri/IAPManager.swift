@@ -17,9 +17,9 @@ class IAPManager: NSObject {
     private var lastUsedUUID: String?
     
     private let productIdentifiers: Set<String> = [
-        "com.t800solucoes.personalnutri.mensal.1",
-        "com.t800solucoes.personalnutri.semestral.1",
-        "com.t800solucoes.personalnutri.anual.1"
+        "com.t800solucoes.personalnutri.mensal.aa",
+        "com.t800solucoes.personalnutri.semestral.a",
+        "com.t800solucoes.personalnutri.anual.a"
     ]
     
     func start() {

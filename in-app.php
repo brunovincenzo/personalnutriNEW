@@ -762,9 +762,9 @@
             
             // Product ID mapping
             const productIds = {
-                'mensal': 'com.t800solucoes.personalnutri.mensal.1',
-                'semestral': 'com.t800solucoes.personalnutri.semestral.1', 
-                'anual': 'com.t800solucoes.personalnutri.anual.1'
+                'mensal': 'com.t800solucoes.personalnutri.mensal.aa',
+                'semestral': 'com.t800solucoes.personalnutri.semestral.a', 
+                'anual': 'com.t800solucoes.personalnutri.anual.a'
             };
 
             const productId = productIds[productType];

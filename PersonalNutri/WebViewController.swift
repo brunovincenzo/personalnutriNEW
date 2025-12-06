@@ -190,7 +190,7 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
         present(alert, animated: true)
     }
     
-    // ✅ Suporte a upload de arquivos e câmera (input type="file")
+    // ✅ Suporte a upload de arquivos (SEM CÂMERA)
     @available(iOS 15.0, *)
     func webView(_ webView: WKWebView,
                  runOpenPanelWith parameters: WKOpenPanelParameters,
@@ -209,13 +209,6 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
         }
         
         let alert = UIAlertController(title: "Selecionar Imagem", message: nil, preferredStyle: .actionSheet)
-        
-        // Opção: Tirar Foto
-        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            alert.addAction(UIAlertAction(title: "📷 Tirar Foto", style: .default) { _ in
-                self.openCamera()
-            })
-        }
         
         // Opção: Escolher da Galeria
         if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
@@ -245,15 +238,7 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
         present(alert, animated: true)
     }
     
-    // MARK: - Camera, Galeria e Arquivos
-    
-    private func openCamera() {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = self
-        picker.allowsEditing = false
-        present(picker, animated: true)
-    }
+    // MARK: - Galeria e Arquivos
     
     private func openPhotoLibrary() {
         let picker = UIImagePickerController()
@@ -443,9 +428,4 @@ class WebViewController: UIViewController, WKScriptMessageHandler, WKNavigationD
             webView.load(request)
         }
     }
-    
-
-
 }
-
-
